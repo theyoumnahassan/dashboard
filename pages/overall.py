@@ -26,7 +26,7 @@ response = service.reports().batchGet(
     body={
         "reportRequests": [
             {
-                "viewId": "your_view_id",  # Replace with your view ID
+                "viewId": "254216168",  # Replace with your view ID
                 "dateRanges": [{"startDate": start_date.strftime("%Y-%m-%d"), "endDate": end_date.strftime("%Y-%m-%d")}],
                 "metrics": [{"expression": "ga:sessions"}, {"expression": "ga:screenPageViews"}, {"expression": "ga:engagementRate"}, {"expression": "ga:totalUsers"}],
                 "dimensions": [{"name": "ga:screenPageViews"}],
