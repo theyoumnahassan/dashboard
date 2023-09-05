@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from google.oauth2.credentials import Credentials
+from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-# Load Google Analytics credentials
-credentials = Credentials.from_authorized_user_file('credentials.json')
+# Load Google Analytics credentials using service account key
+credentials = Credentials.from_service_account_file('credentials.json')
 analytics = build('analyticsreporting', 'v4', credentials=credentials)
 
 # Define the Google Analytics report request
