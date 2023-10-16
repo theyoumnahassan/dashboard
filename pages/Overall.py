@@ -4,7 +4,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 # Google Analytics 4 credentials
-KEY_FILE_LOCATION = 'your-service-account-key.json'
+KEY_FILE_LOCATION = 'credentials.json'
 SCOPES = ['https://www.googleapis.com/auth/analytics.readonly']
 
 # Initialize Streamlit
