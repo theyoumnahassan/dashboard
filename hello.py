@@ -1,55 +1,67 @@
 import streamlit as st
+import pandas as pd
 from google.oauth2 import service_account
-from google.analytics.data_v1alpha import BetaAnalyticsDataClient
+from googleapiclient.discovery import build
 
-# Set up your GA4 API credentials
-credentials = service_account.Credentials.from_service_account_info(
-    YOUR_SERVICE_ACCOUNT_INFO, scopes=["https://www.googleapis.com/auth/analytics.readonly"]
-)
+# Create a Streamlit app title
+st.title("GA4 Bar Graph")
 
-# Create a GA4 client
-client = BetaAnalyticsDataClient(credentials=credentials)
+# Authenticate with Google Analytics using a service account key
+st.sidebar.header("Google Analytics Authentication")
 
-# Function to fetch data from the GA4 API
-def fetch_data_from_ga4_api(view_id, start_date, end_date, metrics):
-    # Make a request to the GA4 API to fetch data
-    response = client.run_report(
-        entity={"property_id": f"properties/{view_id}"},  # Use the provided View ID
-        metrics=metrics,
-        date_ranges=[{"start_date": start_date, "end_date": end_date}],
-    )
+# You'll need to upload your service account key JSON file
+service_account_key = st.sidebar.file_uploader("Upload Service Account Key JSON", type=["json"])
 
-    # Process the API response JSON to extract the data
-    data = process_response(response)
-    return data
+# Create a function to authenticate with Google Analytics
+def authenticate_ga4():
+    if service_account_key is not None:
+        try:
+            credentials = service_account.Credentials.from_service_account_info(
+                service_account_key, scopes=["https://www.googleapis.com/auth/analytics.readonly"]
+            )
+            analytics = build("analyticsdata", "v1alpha", credentials=credentials)
+            return analytics
+        except Exception as e:
+            st.sidebar.error("Authentication failed. Please check your credentials.")
+            st.stop()
+    else:
+        st.sidebar.info("Please upload a Service Account Key JSON file.")
+        st.stop()
 
-# Define a function to process the GA4 API response
-def process_response(response):
-    # Extract data from the API response JSON
-    # Customize this part based on your specific API response structure
-    data = {}  # Create a dictionary to store your data
-    # Extract and format data as needed
-    return data
+analytics = authenticate_ga4()
 
-# Streamlit app layout
-st.title('Google Analytics Dashboard')
+# Fetch GA4 data
+st.sidebar.header("Fetch GA4 Data")
+property_id = st.sidebar.text_input("Enter GA4 Property ID (e.g., 'ga:123456789'):")
 
-# User Input: GA4 View ID
-view_id = st.text_input("Enter GA4 View ID")
+if st.sidebar.button("Fetch Data"):
+    if not property_id:
+        st.sidebar.warning("Please enter a GA4 Property ID.")
+    else:
+        try:
+            # Query Google Analytics for page views
+            response = analytics.runReport(
+                entity={"propertyId": property_id},
+                dimensions=[{"name": "pagePath"}],
+                metrics=[{"name": "engagement"}],
+                dateRanges=[{"startDate": "7daysAgo", "endDate": "today"}],
+            ).execute()
 
-# Date Range Picker
-start_date = st.date_input("Select Start Date")
-end_date = st.date_input("Select End Date")
+            # Extract data
+            rows = response["rows"]
+            data = [(row["dimensionValues"][0]["value"], int(row["metricValues"][0]["value"])) for row in rows]
+            df = pd.DataFrame(data, columns=["Page Title", "Views"])
 
-# Metrics Selection
-metrics = st.multiselect("Select Metrics", ["ga:pageviews", "ga:users"])
+            # Create a bar chart
+            st.bar_chart(df.set_index("Page Title"))
 
-# Fetch data from GA4 API when a button is clicked
-if st.button("Fetch Data"):
-    data = fetch_data_from_ga4_api(view_id, start_date, end_date, metrics)
-    
-    # Display metrics based on the data from the GA4 API
-    for metric in metrics:
-        st.metric(metric.capitalize(), data.get(metric.capitalize(), 0))  # Display metrics
+        except Exception as e:
+            st.sidebar.error("Error fetching data. Please check the Property ID or try again later.")
 
-    # Add other components and visualizations here
+# Display instructions
+st.sidebar.subheader("Instructions")
+st.sidebar.markdown("1. Upload your Google Analytics Service Account Key JSON file.")
+st.sidebar.markdown("2. Enter your GA4 Property ID.")
+st.sidebar.markdown("3. Click 'Fetch Data' to fetch and display the page views data.")
+
+# Add more Streamlit content if needed

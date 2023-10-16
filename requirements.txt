@@ -6,3 +6,5 @@ streamlit==1.14.0
 google-analytics-data==0.10.0
 openai==0.19.0
 linkpreview==0.7.0
+google-auth
+googleapiclient
